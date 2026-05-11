@@ -1,16 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+  <meta charset="UTF-8" />
+  <title>NASA MODIS SST Explorer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-    <link rel="stylesheet" href="main.css" />
-    <script src="main.js" type="module"></script>
-    <title>Weather</title>
-  </head>
-  <body>
-    <h1>Weather</h1>
+<body>
+  <main>
+    <section class="intro">
+      <h1>Warming Waters: NASA MODIS Sea Surface Temperature Explorer</h1>
+      <p>
+        This interactive visualization uses NASA MODIS Aqua and Terra Level-3
+        monthly sea surface temperature imagery from the NASA GIBS WMS API.
+        Use the controls to compare ocean temperature patterns by region,
+        satellite, time of day, month, and year.
+      </p>
+    </section>
 
-    <svg id="weather-plot"></svg>
-  </body>
+    <section class="controls">
+      <label>
+        Region
+        <select id="region-select"></select>
+      </label>
+
+      <label>
+        Satellite
+        <select id="satellite-select"></select>
+      </label>
+
+      <label>
+        Time of Day
+        <select id="time-select"></select>
+      </label>
+
+      <label>
+        Year
+        <input type="range" id="year-slider" />
+        <span id="year-label"></span>
+      </label>
+
+      <label>
+        Month
+        <input type="range" id="month-slider" min="1" max="12" step="1" />
+        <span id="month-label"></span>
+      </label>
+
+      <button id="play-button">Play</button>
+    </section>
+
+    <section class="visualization">
+      <div class="image-card">
+        <h2 id="map-title">MODIS SST Map</h2>
+        <p id="map-subtitle"></p>
+
+        <div class="image-wrapper">
+          <img id="sst-image" alt="NASA MODIS sea surface temperature map" />
+          <div id="tooltip"></div>
+        </div>
+
+        <p class="caption" id="caption"></p>
+      </div>
+
+      <aside class="info-panel">
+        <h3>Current Selection</h3>
+        <p><strong>Region:</strong> <span id="info-region"></span></p>
+        <p><strong>Satellite:</strong> <span id="info-satellite"></span></p>
+        <p><strong>Time of day:</strong> <span id="info-time"></span></p>
+        <p><strong>Date:</strong> <span id="info-date"></span></p>
+        <p><strong>Layer:</strong> <span id="info-layer"></span></p>
+
+        <h3>Design Note</h3>
+        <p>
+          The visualization filters NASA MODIS imagery by bounding box, date,
+          satellite platform, and day/night product. Monthly Level-3 imagery is
+          used to make comparisons more stable and less affected by daily cloud gaps.
+        </p>
+      </aside>
+    </section>
+  </main>
+
+  <script type="module" src="main.js"></script>
+</body>
 </html>

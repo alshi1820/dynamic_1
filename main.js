@@ -1,160 +1,221 @@
-// See original API call:
-// https://open-meteo.com/en/docs#latitude=32.87765&longitude=-117.237396&current=&minutely_15=&hourly=temperature_2m&daily=&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FLos_Angeles&models=
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm";
 
-// Note from Sam: I ran this code to get the data for the weather at Center
-// Hall, then saved the JSON as a file called weather-data.json.
+const metadataPath = "modis_sst_metadata.csv";
 
-// const params = {
-//   latitude: 32.87765,
-//   longitude: -117.237396,
-//   hourly: 'temperature_2m',
-//   temperature_unit: 'fahrenheit',
-//   wind_speed_unit: 'mph',
-//   precipitation_unit: 'inch',
-//   timezone: 'America/Los_Angeles',
-// };
-// const url = 'https://api.open-meteo.com/v1/forecast';
+const regionSelect = d3.select("#region-select");
+const satelliteSelect = d3.select("#satellite-select");
+const timeSelect = d3.select("#time-select");
 
-// const queryString = new URLSearchParams(params).toString();
-// const fullUrl = `${url}?${queryString}`;
+const yearSlider = d3.select("#year-slider");
+const yearLabel = d3.select("#year-label");
 
-// fetch(fullUrl)
-//   .then((response) => response.json())
-//   .then((data) => console.log(data));
+const monthSlider = d3.select("#month-slider");
+const monthLabel = d3.select("#month-label");
 
-// automatically download d3 from cdn
-import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
+const playButton = d3.select("#play-button");
 
-async function loadWeatherData() {
-  try {
-    const response = await fetch('./weather-data.json');
-    const weatherData = await response.json();
-    return weatherData;
-  } catch (error) {
-    console.error('Error loading weather data:', error);
-  }
+const image = d3.select("#sst-image");
+const tooltip = d3.select("#tooltip");
+
+const mapTitle = d3.select("#map-title");
+const mapSubtitle = d3.select("#map-subtitle");
+const caption = d3.select("#caption");
+
+const infoRegion = d3.select("#info-region");
+const infoSatellite = d3.select("#info-satellite");
+const infoTime = d3.select("#info-time");
+const infoDate = d3.select("#info-date");
+const infoLayer = d3.select("#info-layer");
+
+let data = [];
+let isPlaying = false;
+let playInterval = null;
+
+function uniqueValues(data, column) {
+  return Array.from(new Set(data.map((d) => d[column]))).sort();
 }
 
-const weatherData = await loadWeatherData();
-console.log(weatherData);
+function monthName(monthNumber) {
+  const date = new Date(2023, monthNumber - 1, 1);
+  return date.toLocaleString("en-US", { month: "long" });
+}
 
-const svg = d3.select('#weather-plot');
+function populateSelect(select, values) {
+  select
+    .selectAll("option")
+    .data(values)
+    .join("option")
+    .attr("value", (d) => d)
+    .text((d) => d);
+}
 
-const width = 1000;
-const height = 300;
-const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+function setupControls() {
+  const regions = uniqueValues(data, "region");
+  const satellites = uniqueValues(data, "satellite");
+  const times = uniqueValues(data, "time_of_day");
+  const years = uniqueValues(data, "year").map(Number);
+  const months = uniqueValues(data, "month").map(Number);
 
-svg.attr('width', width);
-svg.attr('height', height);
+  populateSelect(regionSelect, regions);
+  populateSelect(satelliteSelect, satellites);
+  populateSelect(timeSelect, times);
 
-// Create scales
-const xScale = d3
-  .scaleTime()
-  .domain([
-    new Date(weatherData.hourly.time[0]),
-    new Date(weatherData.hourly.time[weatherData.hourly.time.length - 1]),
-  ])
-  .range([margin.left, width - margin.right]);
+  yearSlider
+    .attr("min", d3.min(years))
+    .attr("max", d3.max(years))
+    .attr("step", 1)
+    .property("value", d3.max(years));
 
-const yScale = d3
-  .scaleLinear()
-  .domain([
-    d3.min(weatherData.hourly.temperature_2m),
-    d3.max(weatherData.hourly.temperature_2m),
-  ])
-  .range([height - margin.bottom, margin.top]);
+  monthSlider
+    .attr("min", d3.min(months))
+    .attr("max", d3.max(months))
+    .attr("step", 1)
+    .property("value", 7);
 
-// Create axes and labels
-const xAxis = d3
-  .axisBottom(xScale)
-  .ticks(d3.timeDay) // Show ticks for each day
-  .tickFormat(d3.timeFormat('%m/%d')); // Format as month/day
+  regionSelect.property("value", "California Coast");
+  satelliteSelect.property("value", "Aqua");
+  timeSelect.property("value", "Day");
 
-const yAxis = d3.axisLeft(yScale);
+  regionSelect.on("change", updateVisualization);
+  satelliteSelect.on("change", updateVisualization);
+  timeSelect.on("change", updateVisualization);
+  yearSlider.on("input", updateVisualization);
+  monthSlider.on("input", updateVisualization);
 
-svg
-  .append('g')
-  .attr('class', 'x axis')
-  .attr('transform', `translate(0, ${height - margin.bottom})`)
-  .call(xAxis);
+  playButton.on("click", togglePlay);
+}
 
-svg
-  .append('g')
-  .attr('class', 'y axis')
-  .attr('transform', `translate(${margin.left}, 0)`)
-  .call(yAxis);
+function getCurrentSelection() {
+  return {
+    region: regionSelect.property("value"),
+    satellite: satelliteSelect.property("value"),
+    time_of_day: timeSelect.property("value"),
+    year: +yearSlider.property("value"),
+    month: +monthSlider.property("value"),
+  };
+}
 
-// Add tooltip div to the body
-const tooltip = d3
-  .select('body')
-  .append('div')
-  .attr('class', 'tooltip')
-  .style('position', 'absolute')
-  .style('visibility', 'hidden')
-  .style('background-color', 'white')
-  .style('border', '1px solid #ddd')
-  .style('padding', '5px')
-  .style('border-radius', '3px');
+function findMatchingRow(selection) {
+  return data.find(
+    (d) =>
+      d.region === selection.region &&
+      d.satellite === selection.satellite &&
+      d.time_of_day === selection.time_of_day &&
+      +d.year === selection.year &&
+      +d.month === selection.month
+  );
+}
 
-// Add a vertical line for hover indication
-const verticalLine = svg
-  .append('line')
-  .attr('class', 'hover-line')
-  .attr('y1', margin.top)
-  .attr('y2', height - margin.bottom)
-  .style('stroke', '#999')
-  .style('stroke-width', 1)
-  .style('visibility', 'hidden');
+function updateVisualization() {
+  const selection = getCurrentSelection();
 
-// Create a rect overlay for mouse tracking
-const overlay = svg
-  .append('rect')
-  .attr('class', 'overlay')
-  .attr('x', margin.left)
-  .attr('y', margin.top)
-  .attr('width', width - margin.left - margin.right)
-  .attr('height', height - margin.top - margin.bottom)
-  .style('fill', 'none')
-  .style('pointer-events', 'all');
+  yearLabel.text(selection.year);
+  monthLabel.text(monthName(selection.month));
 
-// Replace the circle mouse events with overlay mouse events
-overlay
-  .on('mouseover', () => {
-    verticalLine.style('visibility', 'visible');
-    tooltip.style('visibility', 'visible');
-  })
-  .on('mouseout', () => {
-    verticalLine.style('visibility', 'hidden');
-    tooltip.style('visibility', 'hidden');
-  })
-  .on('mousemove', function (event) {
-    const mouseX = d3.pointer(event)[0];
-    const xDate = xScale.invert(mouseX);
+  const row = findMatchingRow(selection);
 
-    // Find the closest data point
-    const bisect = d3.bisector((d) => new Date(d)).left;
-    const index = bisect(weatherData.hourly.time, xDate);
-    const temp = weatherData.hourly.temperature_2m[index];
-    const time = new Date(weatherData.hourly.time[index]);
+  if (!row) {
+    image.attr("src", "");
+    mapTitle.text("No image available");
+    mapSubtitle.text(
+      `${selection.region}, ${selection.satellite}, ${selection.time_of_day}, ${monthName(selection.month)} ${selection.year}`
+    );
+    caption.text(
+      "There is no matching image in the metadata CSV for this combination of controls."
+    );
 
-    // Update vertical line position
-    verticalLine.attr('x1', xScale(time)).attr('x2', xScale(time));
+    infoRegion.text(selection.region);
+    infoSatellite.text(selection.satellite);
+    infoTime.text(selection.time_of_day);
+    infoDate.text(`${selection.year}-${String(selection.month).padStart(2, "0")}`);
+    infoLayer.text("No matching layer");
 
-    // Update tooltip
-    tooltip
-      .style('top', event.pageY - 10 + 'px')
-      .style('left', event.pageX + 10 + 'px')
-      .html(`${temp.toFixed(1)}°F<br>${time.toLocaleTimeString()}`);
+    return;
+  }
 
-    // Highlight the closest circle
-    svg.selectAll('circle').attr('r', (d) => (d === temp ? 4 : 2));
-  });
+  image.attr("src", row.image_path);
 
-// Remove the previous mouse events from circles
-svg
-  .selectAll('circle')
-  .data(weatherData.hourly.temperature_2m)
-  .join('circle')
-  .attr('cx', (d, i) => xScale(new Date(weatherData.hourly.time[i])))
-  .attr('cy', (d) => yScale(d))
-  .attr('r', 2);
+  mapTitle.text(
+    `MODIS ${row.satellite} ${row.time_of_day} Sea Surface Temperature`
+  );
+
+  mapSubtitle.text(
+    `${row.region} | ${monthName(+row.month)} ${row.year}`
+  );
+
+  caption.text(
+    `This image shows NASA MODIS Level-3 monthly sea surface temperature imagery filtered to ${row.region}, ${monthName(+row.month)} ${row.year}, MODIS ${row.satellite}, and ${row.time_of_day.toLowerCase()} observation.`
+  );
+
+  infoRegion.text(row.region);
+  infoSatellite.text(row.satellite);
+  infoTime.text(row.time_of_day);
+  infoDate.text(row.date);
+  infoLayer.text(row.layer);
+}
+
+function togglePlay() {
+  if (isPlaying) {
+    clearInterval(playInterval);
+    playInterval = null;
+    isPlaying = false;
+    playButton.text("Play");
+    return;
+  }
+
+  isPlaying = true;
+  playButton.text("Pause");
+
+  playInterval = setInterval(() => {
+    const currentMonth = +monthSlider.property("value");
+    const maxMonth = +monthSlider.attr("max");
+    const minMonth = +monthSlider.attr("min");
+
+    const nextMonth = currentMonth >= maxMonth ? minMonth : currentMonth + 1;
+
+    monthSlider.property("value", nextMonth);
+    updateVisualization();
+  }, 900);
+}
+
+function setupTooltip() {
+  image
+    .on("mousemove", function (event) {
+      const selection = getCurrentSelection();
+      const row = findMatchingRow(selection);
+
+      if (!row) return;
+
+      const [x, y] = d3.pointer(event, this);
+
+      tooltip
+        .style("display", "block")
+        .style("left", `${x + 16}px`)
+        .style("top", `${y + 16}px`)
+        .html(`
+          <strong>${row.region}</strong><br/>
+          ${monthName(+row.month)} ${row.year}<br/>
+          MODIS ${row.satellite}, ${row.time_of_day}<br/>
+          Layer: ${row.layer}
+        `);
+    })
+    .on("mouseleave", function () {
+      tooltip.style("display", "none");
+    });
+}
+
+async function init() {
+  data = await d3.csv(metadataPath, (d) => ({
+    ...d,
+    year: +d.year,
+    month: +d.month,
+  }));
+
+  data = data.filter((d) => d.status === "success");
+
+  setupControls();
+  setupTooltip();
+  updateVisualization();
+}
+
+init();
