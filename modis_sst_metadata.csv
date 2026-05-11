@@ -1,0 +1,13 @@
+date,year,month,region,bbox,satellite,time_of_day,layer,image_path,status,error_message
+2012-10-25,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_25.png,success,
+2012-10-26,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_26.png,success,
+2012-10-28,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_28.png,success,
+2012-10-29,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_29.png,success,
+2012-10-30,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_30.png,success,
+2012-10-31,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_31.png,success,
+2012-10-25,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_25.png,success,
+2012-10-26,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_26.png,success,
+2012-10-28,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_28.png,success,
+2012-10-29,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_29.png,success,
+2012-10-30,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_30.png,success,
+2012-10-31,2012,10,East Coast,"-90,-50,15,65",Aqua,Night,MODIS_Aqua_L3_SST_MidIR_9km_Night_Daily,modis_sst_images/east_coast_aqua_night_2012_10_31.png,success,
