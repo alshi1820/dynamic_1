@@ -1,305 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-<title>Hurricane Track Animation</title>
-
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
-
-<style>
-  html, body {
-    margin: 0;
-    height: 100%;
-    background: #111;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
-  }
-
-  #map {
-    width: 100%;
-    height: 100%;
-  }
-
-  /* Hurricane category markers */
-  .storm-marker {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 3px solid white;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    background: black;
-  }
-
-  .storm-marker img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  /* Optional label */
-  .storm-label {
-    color: white;
-    font-size: 14px;
-    font-weight: bold;
-    text-shadow: 0 0 5px black;
-  }
-
-  /* Hurricane path */
-  .leaflet-interactive {
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  /* Floating info panel */
-  .info-box {
-    position: absolute;
-    top: 30px;
-    left: 30px;
-    width: 340px;
-    padding: 24px;
-    z-index: 1000;
-
-    background: rgba(255,255,255,0.9);
-    backdrop-filter: blur(10px);
-
-    border-radius: 18px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.35);
-  }
-
-  .info-box h1 {
-    margin: 0 0 12px;
-    font-size: 32px;
-    color: #222;
-  }
-
-  .info-box p {
-    margin: 0;
-    line-height: 1.5;
-    color: #444;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NASA MODIS Coastal Warming Anomaly Explorer</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
+  <main>
+    <section class="intro">
+      
+      <h1>NASA MODIS Coastal Warming Anomaly Explorer</h1>
+      <p>
+        This interactive visualization explores coastal sea surface temperature patterns using NASA MODIS monthly
+        imagery.
+        The visualization summarizes each image into a regional warmth
+        index,
+        compares that value against the long-term average for the same month, and highlights warmer-than-normal periods
+        over time.
+      </p>
+    </section>
 
-<div id="map"></div>
+    <section class="controls">
 
-<div class="info-box">
-  <h1>Storm Track</h1>
-  <p>
-    Replace the bbox, raster image overlay, and storm points with your own data.
-  </p>
-</div>
+      <label>
+        Satellite
+        <select id="satellite-select"></select>
+      </label>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <label>
+        Time of Day
+        <select id="time-select"></select>
+      </label>
 
-<script>
-/*
-=====================================================
-1. CREATE MAP
-=====================================================
-*/
+      <label>
+        Year
+        <input type="range" id="year-slider" />
+        <span id="year-label"></span>
+      </label>
 
-const map = L.map("map", {
-  zoomControl: false,
-  attributionControl: false
-});
+      <button id="play-button">Play</button>
+    </section>
 
-/*
-=====================================================
-2. CUSTOM BBOX
-Replace this with YOUR bbox
+    <!-- <section class="stat-cards"> -->
+      <!-- <div class="stat-card">
+        <span class="stat-label">Warmth anomaly</span>
+        <strong id="stat-anomaly">--</strong>
+        <span class="stat-note">selected month vs. same-month baseline</span>
+      </div> -->
 
-Format:
-[
-  [southWestLat, southWestLng],
-  [northEastLat, northEastLng]
-]
-=====================================================
-*/
+      <!-- <div class="stat-card">
+        <span class="stat-label">Warm-color area</span>
+        <strong id="stat-warm-area">--</strong>
+        <span class="stat-note">share of valid pixels classified as warm</span>
+      </div> -->
 
-const bbox = [
-  [18.0, -98.0],
-  [42.0, -65.0]
-];
+      <!-- <div class="stat-card">
+        <span class="stat-label">Warmth rank</span>
+        <strong id="stat-rank">--</strong>
+        <span class="stat-note">among matching region / satellite / time</span>
+      </div> -->
+    <!-- </section> -->
 
-map.fitBounds(bbox);
-
-/*
-=====================================================
-3. OPTIONAL DARK BASEMAP
-=====================================================
-*/
-
-L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-  {
-    subdomains: "abcd",
-    maxZoom: 19
-  }
-).addTo(map);
-
-/*
-=====================================================
-4. ADD YOUR HEATMAP / CLIMATE IMAGE OVERLAY
-Replace:
-- image URL
-- bbox
-=====================================================
-*/
-
-const overlayBounds = [
-  [18.0, -98.0],
-  [42.0, -65.0]
-];
-
-L.imageOverlay(
-  "YOUR_OVERLAY_IMAGE.png",
-  overlayBounds,
-  {
-    opacity: 0.85
-  }
-).addTo(map);
-
-/*
-=====================================================
-5. HURRICANE TRACK DATA
-
-Each point:
-- lat
-- lng
-- category
-- icon image
-
-Replace image paths with your own images
-=====================================================
-*/
-
-const stormPoints = [
-  {
-    lat: 20.2,
-    lng: -86.5,
-    category: "TS",
-    icon: "icons/ts.png"
-  },
-  {
-    lat: 22.0,
-    lng: -87.1,
-    category: "1",
-    icon: "icons/cat1.png"
-  },
-  {
-    lat: 24.3,
-    lng: -88.0,
-    category: "2",
-    icon: "icons/cat2.png"
-  },
-  {
-    lat: 26.5,
-    lng: -89.4,
-    category: "3",
-    icon: "icons/cat3.png"
-  },
-  {
-    lat: 29.0,
-    lng: -90.5,
-    category: "4",
-    icon: "icons/cat4.png"
-  },
-  {
-    lat: 33.2,
-    lng: -84.8,
-    category: "TS",
-    icon: "icons/ts.png"
-  }
-];
-
-/*
-=====================================================
-6. DRAW HURRICANE PATH
-=====================================================
-*/
-
-const latlngs = stormPoints.map(p => [p.lat, p.lng]);
-
-L.polyline(latlngs, {
-  color: "white",
-  weight: 4,
-  opacity: 0.95,
-  dashArray: "10 8"
-}).addTo(map);
-
-/*
-=====================================================
-7. PLACE CUSTOM ICONS ON TRACK
-=====================================================
-*/
-
-stormPoints.forEach(point => {
-
-  const icon = L.divIcon({
-    className: "",
-    html: `
-      <div class="storm-marker">
-        <img src="${point.icon}" />
+    <section class="trend-card">
+      <div class="trend-header">
+        <div>
+          <h2>How Unusual Are Ocean Temperatures Around the U.S.?</h2>
+          <p id="trend-subtitle"></p>
+        </div>
+        <p class="trend-hint">Hover or click a point to inspect that month on the map.</p>
       </div>
-    `,
-    iconSize: [42, 42],
-    iconAnchor: [21, 21]
-  });
 
-  L.marker([point.lat, point.lng], {
-    icon
-  })
-  .addTo(map)
-  .bindTooltip(point.category, {
-    permanent: true,
-    direction: "center",
-    className: "storm-label",
-    offset: [0, 0]
-  });
-});
+      <div class="trend-wrapper">
+        <svg id="trend-chart" role="img" aria-label="Line chart of sea surface temperature anomaly over time"></svg>
+        <div id="trend-tooltip"></div>
+      </div>
+    </section>
 
-/*
-=====================================================
-8. OPTIONAL: ANIMATED MOVING HURRICANE
-=====================================================
-*/
+    <!-- <section class="visualization">
+      <div class="image-card">
+        <h2 id="map-title">MODIS SST Map</h2>
+        <p id="map-subtitle"></p>
 
-const movingIcon = L.divIcon({
-  className: "",
-  html: `
-    <div class="storm-marker">
-      <img src="icons/hurricane-center.png" />
-    </div>
-  `,
-  iconSize: [52, 52],
-  iconAnchor: [26, 26]
-});
+        <div class="image-wrapper">
+          <img id="sst-image" alt="NASA MODIS sea surface temperature map" />
+          <div id="tooltip"></div>
+        </div>
 
-const movingMarker = L.marker(latlngs[0], {
-  icon: movingIcon
-}).addTo(map);
+        <p class="caption" id="caption"></p>
+      </div>
 
-let idx = 0;
+      <aside class="info-panel">
+        <h3>Current Selection</h3>
+        <p><strong>Region:</strong> <span id="info-region"></span></p>
+        <p><strong>Satellite:</strong> <span id="info-satellite"></span></p>
+        <p><strong>Time of day:</strong> <span id="info-time"></span></p>
+        <p><strong>Date:</strong> <span id="info-date"></span></p>
+        <p><strong>Layer:</strong> <span id="info-layer"></span></p>
 
-setInterval(() => {
-  idx++;
-
-  if (idx >= latlngs.length) {
-    idx = 0;
-  }
-
-  movingMarker.setLatLng(latlngs[idx]);
-
-}, 1000);
-
-</script>
-
+        <h3>Transformation</h3>
+        <p>
+          Each image is summarized into a valid-pixel warmth index. The anomaly subtracts the average warmth index for
+          the same region,
+          satellite, time of day, and calendar month across all available years. This helps compare whether a selected
+          month is warmer
+          or cooler than typical for that time of year.
+        </p>
+      </aside>
+    </section> -->
+    <section class="note-card">
+      <p>
+        This visualization aims to compare sea temperature anomalies across different regions around the United States. Data on temperature anomalies are used to standardize data so that they are more comparable across different regions. A line graph was used in order to represent these temperature trends over time. We incorporated color into the line graph to visualize the temperature gradients derived from NASA satellite footage. We began with simple map images and created a simple line graph. We then transformed the line graph to incorporate colors from the NASA map images and to display per year based on the slider specifying year. We then scaled all the graphs to have the same y-axes to allow for more accurate comparison across regions.
+      </p>
+    </section>
+  <script type="module" src="main.js"></script>
 </body>
+
 </html>
